@@ -1,18 +1,26 @@
 FROM centos:7
 
 ### install java
-ENV JAVA_VERSION 8u112
-ENV BUILD_VERSION b15
+ENV JAVA_VERSION 8
+ENV JAVA_RELEASE JDK
 
 # Upgrading system
 RUN yum -y update && \
-    yum -y install wget curl nss-tools python3 && \
-    wget --no-cookies --no-check-certificate --header "Cookie: oraclelicense=accept-securebackup-cookie" "http://download.oracle.com/otn-pub/java/jdk/$JAVA_VERSION-$BUILD_VERSION/jre-$JAVA_VERSION-linux-x64.rpm" -O /tmp/jre-8-linux-x64.rpm && \
-    yum -y install /tmp/jre-8-linux-x64.rpm && \
-    rm -f /tmp/jre-8-linux-x64.rpm && \
-    yum clean all
+    yum -y install curl nss-tools python3
 
-ENV JAVA_HOME /usr/java/latest
+RUN set -euxo pipefail && \
+    pkg="java-1.$JAVA_VERSION.0-openjdk" && \
+    if [ "$JAVA_RELEASE" = "JDK" ]; then \
+        pkg="$pkg-devel"; \
+    else \
+        pkg="$pkg-headless"; \
+    fi; \
+    yum install -y "$pkg" && \
+    yum clean all && \
+    rm -rf /var/cache/yum
+
+ENV JAVA_HOME /usr/lib/jvm/jre
+ENV PATH $PATH:$JAVA_HOME/bin
 
 ### https://github.com/Yelp/dumb-init
 RUN curl -fLsS -o /usr/local/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.0.2/dumb-init_1.0.2_amd64 && chmod +x /usr/local/bin/dumb-init
